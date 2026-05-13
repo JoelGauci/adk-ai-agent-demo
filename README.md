@@ -1,5 +1,9 @@
 # Google ADK AI Agent Demo 1
 
+<p align="center">
+  <img src="https://miro.medium.com/v2/resize:fit:1024/format:webp/1*A4-k_sI5kmrphjS4tJ_rpA.png" alt="Google ADK Logo" width="300">
+</p>
+
 This project demonstrates an autonomous AI Agent built with Google's **Agent Development Kit (ADK)** for Go. The agent connects to specialized backend platforms (Lego and Robot diagnostics) via the **Model Context Protocol (MCP)** over Streamable transport.
 
 Apigee (X or Hybrid) serves as the **Extended Agent Gateway**, routing traffic to the MCP servers, and as the **Identity Facade** for token generation and exchange.

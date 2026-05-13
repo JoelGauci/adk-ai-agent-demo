@@ -175,9 +175,9 @@
             Agent Development Kit
         </a>
         {{if .Authenticated}}
-        <span class="badge bg-success rounded-pill">
+        <span class="badge bg-success rounded-pill" style="font-size: 0.85rem; padding: 0.5em 0.8em;">
             <i class="fa-solid fa-user-circle me-1"></i>
-            {{if .UserEmail}}{{.UserEmail}}{{else}}Authenticated{{end}}
+            {{if .UserName}}<strong style="color: #FBBC05;">{{.UserName}}</strong> <span style="opacity: 0.9;">({{.UserEmail}})</span>{{else}}{{if .UserEmail}}{{.UserEmail}}{{else}}Authenticated{{end}}{{end}}
         </span>
         {{else}}
         <a href="/login" class="btn btn-primary btn-sm">Login with OAuth</a>

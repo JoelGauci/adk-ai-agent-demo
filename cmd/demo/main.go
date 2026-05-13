@@ -33,6 +33,7 @@ var (
 type templateData struct {
 	Authenticated bool
 	UserEmail     string
+	UserName      string
 }
 
 type logPayload struct {
@@ -78,6 +79,36 @@ func main() {
 		if emailCookie != nil {
 			data.UserEmail = emailCookie.Value
 		}
+
+		if cookie != nil && cookie.Value != "" {
+			protectedURL := strings.Replace(auth.TokenURL, "/token", "/protected", 1)
+			req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, protectedURL, nil)
+			if err == nil {
+				req.Header.Set("Authorization", "Bearer "+cookie.Value)
+				resp, err := http.DefaultClient.Do(req)
+				if err == nil {
+					defer resp.Body.Close()
+					if resp.StatusCode == http.StatusOK {
+						var protRes struct {
+							Response struct {
+								User struct {
+									Name  string `json:"name"`
+									Email string `json:"email"`
+								} `json:"user"`
+							} `json:"response"`
+						}
+						if json.NewDecoder(resp.Body).Decode(&protRes) == nil {
+							if protRes.Response.User.Email != "" {
+								data.UserEmail = protRes.Response.User.Email
+								auth.StoreEmailForToken(cookie.Value, data.UserEmail)
+							}
+							data.UserName = protRes.Response.User.Name
+						}
+					}
+				}
+			}
+		}
+
 		tmpl.Execute(w, data)
 	})
 
