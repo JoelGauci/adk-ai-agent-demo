@@ -140,7 +140,7 @@ func main() {
 		// Secure toggle: Allow local HTTP but enforce TLS safety where available.
 		isSecure := strings.HasPrefix(auth.RedirectURI, "https://")
 
-		// Propagate identical expiration boundaries to both cookies.
+		// Propagate identical expiration boundaries to both cookies with SameSite=None to allow iframe usage.
 		http.SetCookie(w, &http.Cookie{
 			Name:     "base_token",
 			Value:    tok,
@@ -148,6 +148,7 @@ func main() {
 			MaxAge:   expiresIn,
 			Secure:   isSecure,
 			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
 		})
 
 		http.SetCookie(w, &http.Cookie{
@@ -157,6 +158,7 @@ func main() {
 			MaxAge:   expiresIn,
 			Secure:   isSecure,
 			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
 		})
 
 		http.Redirect(w, r, "/", http.StatusFound)
