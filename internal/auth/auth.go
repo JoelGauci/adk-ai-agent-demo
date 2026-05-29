@@ -232,7 +232,17 @@ func GetTokenForAudience(ctx context.Context, baseToken string, audience string,
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	if logger != nil {
+		// Anonymize client_secret and subject_token for log safety
+		loggedData := url.Values{}
+		for k, v := range data {
+			if k == "client_secret" || k == "subject_token" {
+				loggedData[k] = []string{"[REDACTED]"}
+			} else {
+				loggedData[k] = v
+			}
+		}
 		logger("URL", fmt.Sprintf("POST %s", TokenURL))
+		logger("EXCHANGE", fmt.Sprintf("Token Exchange Request:\n%s", loggedData.Encode()))
 	}
 
 	resp, err := authHTTPClient.Do(req)
@@ -241,19 +251,29 @@ func GetTokenForAudience(ctx context.Context, baseToken string, audience string,
 	}
 	defer resp.Body.Close()
 
+	// Read body bytes first to allow both logging and parsing
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
 		if logger != nil {
-			logger("ERROR", fmt.Sprintf("Exchange failed (%d): %s", resp.StatusCode, string(b)))
+			logger("ERROR", fmt.Sprintf("Exchange failed (%d): %s", resp.StatusCode, string(bodyBytes)))
 		}
 		return "", fmt.Errorf("exchange endpoint returned error code: %d", resp.StatusCode)
+	}
+
+	// Log the raw JSON response!
+	if logger != nil {
+		logger("TOKEN", fmt.Sprintf("Acquired dynamic token response for audience %s:\n%s", audience, string(bodyBytes)))
 	}
 
 	var res struct {
 		AccessToken string `json:"access_token"`
 		ExpiresIn   int    `json:"expires_in"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+	if err := json.NewDecoder(strings.NewReader(string(bodyBytes))).Decode(&res); err != nil {
 		return "", fmt.Errorf("failed to decode exchange response: %v", err)
 	}
 
@@ -269,7 +289,7 @@ func GetTokenForAudience(ctx context.Context, baseToken string, audience string,
 	expiry := time.Now().Add(expiryDuration)
 
 	if logger != nil {
-		logger("TOKEN", fmt.Sprintf("Stored new dynamic token for audience %s. (Len:%d)", audience, len(res.AccessToken)))
+		logger("TOKEN", fmt.Sprintf("Stored fresh dynamic token for audience %s. (Len:%d) Token: %s", audience, len(res.AccessToken), res.AccessToken))
 	}
 
 	mcpTokenCache.Lock()
