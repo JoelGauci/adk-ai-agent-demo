@@ -45,6 +45,13 @@ func StoreEmailForToken(token, email string) {
 	emailRegistry.mapping[token] = email
 }
 
+// RemoveToken removes the token from the registry.
+func RemoveToken(token string) {
+	emailRegistry.Lock()
+	defer emailRegistry.Unlock()
+	delete(emailRegistry.mapping, token)
+}
+
 // GetEmailForToken retrieves the email associated with a token.
 func GetEmailForToken(token string) (string, bool) {
 	emailRegistry.RLock()

@@ -251,6 +251,29 @@
             box-shadow: 0 6px 16px rgba(6, 182, 212, 0.4);
         }
 
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.1) !important;
+            color: #ef4444 !important;
+            border: 1px solid rgba(239, 68, 68, 0.35) !important;
+            border-radius: 10px !important;
+            font-family: var(--font-primary);
+            font-size: 0.82rem !important;
+            font-weight: 600 !important;
+            padding: 0.4rem 1rem !important;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2) !important;
+            border-color: #ef4444 !important;
+            transform: translateY(-1px);
+            color: #ef4444 !important;
+        }
+
         /* --- Main Workspace Panel --- */
         .main-workspace {
             flex: 1;
@@ -660,10 +683,11 @@
 
                 {{if .Authenticated}}
                 <div class="user-profile">
-                    <span class="user-badge">
+                    <span class="user-badge" style="margin-right: 1rem;">
                         <i class="fa-solid fa-user-circle"></i>
                         {{if .UserName}}<strong style="color: var(--color-cyan);">{{.UserName}}</strong>{{else}}{{if .UserEmail}}{{.UserEmail}}{{else}}Authenticated{{end}}{{end}}
                     </span>
+                    <a href="/logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</a>
                 </div>
                 {{else}}
                 <a href="/login" class="login-btn"><i class="fa-solid fa-right-to-bracket"></i> Sign In</a>

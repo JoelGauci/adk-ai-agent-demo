@@ -83,6 +83,9 @@ Launch the application binary:
 ```
 Navigate your browser to `http://localhost:8080` to initiate the authentication workflow.
 
+### 5. Sign Out & Re-initialization
+To clear user sessions, click the **Sign Out** button in the navigation header. This action deletes the `base_token` and `user_email` cookies from the browser, calls the backend to remove the active token association from the server-side registry, and resets the interface, requiring a new authentication workflow.
+
 ## Deployment to Google Cloud Run
 
 For the specific target project `apigee-x-jog` within the region `europe-west1`, proceed with the automatic container build and deployment steps:

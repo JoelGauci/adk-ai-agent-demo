@@ -140,7 +140,12 @@ func main() {
 		// Secure toggle: Allow local HTTP but enforce TLS safety where available.
 		isSecure := strings.HasPrefix(auth.RedirectURI, "https://")
 
-		// Propagate identical expiration boundaries to both cookies with SameSite=None to allow iframe usage.
+		sameSite := http.SameSiteLaxMode
+		if isSecure {
+			sameSite = http.SameSiteNoneMode
+		}
+
+		// Propagate identical expiration boundaries to both cookies with dynamic SameSite to allow iframe usage on HTTPS.
 		http.SetCookie(w, &http.Cookie{
 			Name:     "base_token",
 			Value:    tok,
@@ -148,7 +153,7 @@ func main() {
 			MaxAge:   expiresIn,
 			Secure:   isSecure,
 			HttpOnly: true,
-			SameSite: http.SameSiteNoneMode,
+			SameSite: sameSite,
 		})
 
 		http.SetCookie(w, &http.Cookie{
@@ -158,7 +163,43 @@ func main() {
 			MaxAge:   expiresIn,
 			Secure:   isSecure,
 			HttpOnly: true,
-			SameSite: http.SameSiteNoneMode,
+			SameSite: sameSite,
+		})
+
+		http.Redirect(w, r, "/", http.StatusFound)
+	})
+
+	mux.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("base_token")
+		if err == nil && cookie.Value != "" {
+			auth.RemoveToken(cookie.Value)
+		}
+
+		isSecure := strings.HasPrefix(auth.RedirectURI, "https://")
+
+		sameSite := http.SameSiteLaxMode
+		if isSecure {
+			sameSite = http.SameSiteNoneMode
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "base_token",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			Secure:   isSecure,
+			HttpOnly: true,
+			SameSite: sameSite,
+		})
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "user_email",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			Secure:   isSecure,
+			HttpOnly: true,
+			SameSite: sameSite,
 		})
 
 		http.Redirect(w, r, "/", http.StatusFound)
