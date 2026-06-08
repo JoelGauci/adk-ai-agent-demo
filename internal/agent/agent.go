@@ -84,9 +84,11 @@ func BuildUserAgent(ctx context.Context, geminiAPIKey string, baseToken string) 
 	var closers []io.Closer
 
 	// 1. Initialize Gemini model.
-	geminiModel, err := gemini.NewModel(ctx, "gemini-2.5-flash", &genai.ClientConfig{
-		APIKey: geminiAPIKey,
-	})
+	cfg := &genai.ClientConfig{}
+	if geminiAPIKey != "" {
+		cfg.APIKey = geminiAPIKey
+	}
+	geminiModel, err := gemini.NewModel(ctx, "gemini-2.5-flash", cfg)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed initializing gemini: %w", err)
 	}
