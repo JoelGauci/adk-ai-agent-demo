@@ -29,13 +29,21 @@ In both cases, OpenAPI specifications (OAS) are used to create the proxies (MCP 
 ## Environment Variables Configuration
 The agent is strictly configured via environment. Do not commit secrets into repositories. Configure these values inside your deployment manager (e.g., Cloud Secret Manager or Local `.env` simulation):
 
+> [!TIP]
+> **Security Best Practice (Recommended)**: Instead of using a static `GOOGLE_API_KEY` (Gemini Developer API), it is highly recommended to authenticate using a **Service Account** with **Application Default Credentials (ADC)** via **Vertex AI**.
+> This eliminates the need to manage static API keys and leverages Google Cloud's native IAM security.
+> To use this mode:
+> 1. Leave `GOOGLE_API_KEY` empty/unset.
+> 2. Set `GOOGLE_GENAI_USE_VERTEXAI="true"`.
+> 3. Ensure the service account running the application (e.g., the default Compute Engine service account on Cloud Run) has the **Vertex AI User** (`roles/aiplatform.user`) role.
+
 > [!NOTE]
 > The placeholder `[AGENT_GATEWAY_HOST]` used in the examples below refers to your **Apigee Gateway host** (X or Hybrid).
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `PORT` | Port to run application on | `8080` |
-| `GOOGLE_API_KEY` | Gemini 2.5 Pro/Flash API Key | `AIzaSy...` |
+| `GOOGLE_API_KEY` | Gemini API Key (Optional if using Service Account/ADC) | `AIzaSy...` |
 | `OAUTH_CLIENT_ID` | Application Client Identity | `xkey-123456789` |
 | `OAUTH_CLIENT_SECRET` | Secret for server-to-server token delivery | `xsecret_sensitive` |
 | `OAUTH_AUTHORIZE_URL` | Authorization endpoint for user browser redirection | `https://[AGENT_GATEWAY_HOST]/v1/oauth20/authorize` |
@@ -43,6 +51,9 @@ The agent is strictly configured via environment. Do not commit secrets into rep
 | `OAUTH_REDIRECT_URI` | Return redirect must match provider config exactly | `http://localhost:8080/callback` or `https://your-service-hash.a.run.app/callback` |
 | `LEGO_MCP_ENDPOINT` | The URL pointing to Lego MCP Server | `https://[AGENT_GATEWAY_HOST]/mcp/lego` |
 | `ROBOT_MCP_ENDPOINT` | The URL pointing to Robot MCP Server | `https://[AGENT_GATEWAY_HOST]/mcp/robot` |
+| `GOOGLE_GENAI_USE_VERTEXAI` | Set to `true` to use Vertex AI backend instead of Gemini Developer API | `true` |
+| `GOOGLE_CLOUD_PROJECT` | GCP Project ID (Required for Vertex AI / Service Account mode) | `apigee-x-jog` |
+| `GOOGLE_CLOUD_LOCATION` | GCP Region/Location for Vertex AI (e.g., `us-central1` or `europe-west3`) | `us-central1` |
 
 ## Project Structure
 
@@ -97,7 +108,30 @@ gcloud secrets create adk-oauth-secret --data-file="secret.txt" --project=apigee
 ```
 
 ### Step B: Containerize and Deploy Command
-Execute this direct `gcloud run deploy` from source code root directory. Update placeholder variables with final production values:
+Execute this direct `gcloud run deploy` from source code root directory.
+
+#### Option 1: Using Service Account (Recommended Best Practice)
+Deploy using the service account's Application Default Credentials (ADC) via Vertex AI:
+```bash
+gcloud run deploy adk-ai-agent-demo \
+  --source . \
+  --project=apigee-x-jog \
+  --region=europe-west1 \
+  --allow-unauthenticated \
+  --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=true" \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=apigee-x-jog" \
+  --set-env-vars="GOOGLE_CLOUD_LOCATION=us-central1" \
+  --set-env-vars="OAUTH_CLIENT_ID=xkey-123456789" \
+  --set-env-vars="OAUTH_AUTHORIZE_URL=https://[AGENT_GATEWAY_HOST]/v1/oauth20/authorize" \
+  --set-env-vars="OAUTH_TOKEN_URL=https://[AGENT_GATEWAY_HOST]/v1/oauth20/token" \
+  --set-env-vars="LEGO_MCP_ENDPOINT=https://[AGENT_GATEWAY_HOST]/mcp/lego" \
+  --set-env-vars="ROBOT_MCP_ENDPOINT=https://[AGENT_GATEWAY_HOST]/mcp/robot" \
+  --set-env-vars="OAUTH_REDIRECT_URI=https://[SERVICE_FINAL_URL]/callback" \
+  --set-secrets="OAUTH_CLIENT_SECRET=adk-oauth-secret:latest"
+```
+*Note: Make sure to grant the **Vertex AI User** (`roles/aiplatform.user`) role to the Cloud Run service account (e.g., `[PROJECT_NUMBER]-compute@developer.gserviceaccount.com`).*
+
+#### Option 2: Using API Key (Legacy)
 ```bash
 gcloud run deploy adk-ai-agent-demo \
   --source . \
